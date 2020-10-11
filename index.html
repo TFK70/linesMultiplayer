@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body style="overflow: hidden">
+    <canvas
+      style="
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        border: 1px solid black;
+      "
+    ></canvas>
+    <button id="pl1" style="position: absolute; left: 0; top: 0">
+      Player 1
+    </button>
+    <button id="pl2" style="position: absolute; right: 0; top: 0">
+      Player 2
+    </button>
+    <h1 id="p1_score" style="float:left;">0</h1>
+    <h1 id="p2_score" style="float:right">0</h1>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io("http://192.168.0.103:4000");
+      const butP1 = document.getElementById("pl1");
+      const butP2 = document.getElementById("pl2");
+      const score1 = document.getElementById("p1_score");
+      const score2 = document.getElementById("p2_score");
+      const canv = document.getElementsByTagName("canvas")[0];
+      const x = canv.getContext("2d");
+      const pr = devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      let player = 0;
+
+      canv.width = 700;
+      canv.height = 700;
+      x.scale(pr, pr);
+      x.globalAlpha = 1;
+
+      const size = 50;
+
+      document.onkeydown = (e) => {
+        e.key == "ArrowUp" ? socket.emit('arrowPressed', 'up', player) : null;
+        e.key == "ArrowDown" ? socket.emit('arrowPressed', 'down', player) : null;
+        e.key == "ArrowLeft" ? socket.emit('arrowPressed', 'left' , player) : null;
+        e.key == "ArrowRight" ? socket.emit('arrowPressed', 'right', player) : null;
+      };
+
+      const randomize = (from, to) => {
+        return Math.floor(Math.random() * (to - from) + from);
+      };
+
+      butP1.addEventListener("click", () => {
+        socket.emit("setPlayer", 1);
+        butP1.style.display = "none";
+        player = 1;
+      });
+
+      butP2.addEventListener("click", () => {
+        socket.emit("setPlayer", 2);
+        butP2.style.display = "none";
+        player = 2;
+      });
+
+      socket.on("updatePlayer", (playerNumber) => {
+        if(playerNumber===1) {
+            butP1.style.display = "none"
+        } else {
+            butP2.style.display = "none";
+        }
+      });
+
+      socket.on("renderGround", (playground, player1_score, player2_score) => {
+        for (let i = 0; i < playground.length; i++) {
+          for (let j = 0; j < playground[0].length; j++) {
+            x.beginPath();
+            x.fillStyle = playground[i][j] === 1 ? "black" : playground[i][j] === 2 ? "blue" : "white";
+            x.fillRect(
+              j * Math.ceil(canv.width / size),
+              i * Math.ceil(canv.height / size),
+              Math.floor(canv.width / size),
+              Math.floor(canv.height / size)
+            );
+            x.fill();
+            x.closePath();
+          }
+        }
+
+        score1.textContent = player1_score;
+        score2.textContent = player2_score;
+      });
+    </script>
+  </body>
+</html>
